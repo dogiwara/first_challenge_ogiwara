@@ -4,9 +4,9 @@ FirstChallenge::FirstChallenge():private_nh_("~"),nh_("")
 {
     private_nh_.param("hz", hz_, {10});
 
-    pub_cmd_vel_ = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/cmd_vel",1);
+    pub_cmd_vel_ = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
     sub_odom_ = nh_.subscribe("/roomba/odometry", 100, &FirstChallenge::odometry_callback, this);
-    sub_scan_ = nh_.subscribe("/roomba/scan", 100, &FirstChallenge::laser_callback, this);
+    sub_scan_ = nh_.subscribe("/scan", 100, &FirstChallenge::laser_callback, this);
 }
 
 void FirstChallenge::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -35,12 +35,14 @@ void FirstChallenge::debug()
 
 float FirstChallenge::scan()
 {
-    float sight = 15.0 / 0.125;
-    int laser_front = laser_.ranges.size() / 2;
     float range_min = 1e6;
-    for(int i = laser_front - sight ; i < laser_front + sight; i++){
-        if(laser_.ranges[i] < range_min && laser_.ranges[i] > 0.20){
-            range_min = laser_.ranges[i];
+    if(laser_.ranges.size()){
+        int sight = 10.0 / 0.125;
+        int laser_front = laser_.ranges.size() / 2;
+        for(int i = laser_front - sight ; i < laser_front + sight; i++){
+            if(laser_.ranges[i] < range_min && laser_.ranges[i] > 0.20){
+                range_min = laser_.ranges[i];
+            }
         }
     }
     return range_min;
@@ -85,6 +87,7 @@ void FirstChallenge::process()
             else{
                 run(0.10, 0.0);
                 complete_ = scan() <= 0.50;
+                std::cout << "laser_min: " << scan() << std::endl;
             }
 
         }
